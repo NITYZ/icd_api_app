@@ -1,8 +1,10 @@
 import os
 import requests
 from flask import Flask, jsonify
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 def get_access_token():
     url = 'https://icd.who.int/icdapi/token'
@@ -26,13 +28,6 @@ def fetch_icd():
     response = requests.get('https://id.who.int/icd/release/11/2023-01/mms', headers=headers)
     return jsonify(response.json())
 
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
-from flask_cors import CORS
-
-app = Flask(__name__)
-CORS(app)
-if __name__ == '__main__':
 @app.route('/icd/search/<string:term>')
 def search_icd(term):
     token = get_access_token()
@@ -40,3 +35,6 @@ def search_icd(term):
     url = f'https://id.who.int/icd/release/11/2023-01/mms/search?q={term}&linearization=foundation'
     response = requests.get(url, headers=headers)
     return jsonify(response.json())
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0')
