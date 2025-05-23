@@ -32,3 +32,11 @@ from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)
+if __name__ == '__main__':
+@app.route('/icd/search/<string:term>')
+def search_icd(term):
+    token = get_access_token()
+    headers = {'Authorization': f'Bearer {token}'}
+    url = f'https://id.who.int/icd/release/11/2023-01/mms/search?q={term}&linearization=foundation'
+    response = requests.get(url, headers=headers)
+    return jsonify(response.json())
