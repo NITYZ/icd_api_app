@@ -13,9 +13,21 @@ def get_access_token():
         'client_id': os.getenv('ICD_CLIENT_ID'),
         'client_secret': os.getenv('ICD_CLIENT_SECRET')
     }
-    response = requests.post(url, data=data)
-    response.raise_for_status()
-    return response.json()['access_token']
+    try:
+        # ⚠️ Temporário: ignora verificação SSL
+        response = requests.post(url, data=data, verify=False)
+        response.raise_for_status()
+        return response.json()['access_token']
+    except requests.exceptions.SSLError as e:
+        return jsonify({
+            "error": "Erro de SSL - verificação de certificado falhou.",
+            "detalhes": str(e)
+        }), 500
+    except requests.exceptions.RequestException as e:
+        return jsonify({
+            "error": "Erro ao conectar à API da OMS.",
+            "detalhes": str(e)
+        }), 500
 
 @app.route('/')
 def home():
@@ -24,6 +36,8 @@ def home():
 @app.route('/icd')
 def fetch_icd():
     token = get_access_token()
+    if isinstance(token, tuple):  # Erro tratado
+        return token
     headers = {'Authorization': f'Bearer {token}'}
     response = requests.get('https://id.who.int/icd/release/11/2023-01/mms', headers=headers)
     return jsonify(response.json())
@@ -31,6 +45,8 @@ def fetch_icd():
 @app.route('/icd/search/<string:term>')
 def search_icd(term):
     token = get_access_token()
+    if isinstance(token, tuple):  # Erro tratado
+        return token
     headers = {'Authorization': f'Bearer {token}'}
     url = f'https://id.who.int/icd/release/11/2023-01/mms/search?q={term}&linearization=foundation'
     response = requests.get(url, headers=headers)
