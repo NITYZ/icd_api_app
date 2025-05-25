@@ -25,7 +25,7 @@ def get_access_token():
         }), 500
     except requests.exceptions.RequestException as e:
         return jsonify({
-            "error": "Erro ao conectar à API da OMS.",
+            "error": "Erro ao conectar à API da OMS para obter o token.",
             "detalhes": str(e)
         }), 500
 
@@ -36,21 +36,40 @@ def home():
 @app.route('/icd')
 def fetch_icd():
     token = get_access_token()
-    if isinstance(token, tuple):  # Erro tratado
+    if isinstance(token, tuple):  # token com erro
         return token
+
     headers = {'Authorization': f'Bearer {token}'}
-    response = requests.get('https://id.who.int/icd/release/11/2023-01/mms', headers=headers)
-    return jsonify(response.json())
+    url = 'https://id.who.int/icd/release/11/2023-01/mms'
+
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json())
+    except requests.exceptions.RequestException as e:
+        return jsonify({
+            "error": "Erro ao buscar dados da classificação ICD.",
+            "detalhes": str(e)
+        }), 500
 
 @app.route('/icd/search/<string:term>')
 def search_icd(term):
     token = get_access_token()
-    if isinstance(token, tuple):  # Erro tratado
+    if isinstance(token, tuple):  # token com erro
         return token
+
     headers = {'Authorization': f'Bearer {token}'}
     url = f'https://id.who.int/icd/release/11/2023-01/mms/search?q={term}&linearization=foundation'
-    response = requests.get(url, headers=headers)
-    return jsonify(response.json())
+
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json())
+    except requests.exceptions.RequestException as e:
+        return jsonify({
+            "error": "Erro ao buscar resultados para o termo ICD.",
+            "detalhes": str(e)
+        }), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
